@@ -13,6 +13,15 @@ trap 'ret=$?; test $ret -ne 0 && printf "failed\n\n" >&2; exit $ret' EXIT
 set -e
 ### end common-components/exit-trap
 
+fancy_echo "Installing XCode Command Line Tools ..."
+  xcode-select --install
+
+fancy_echo "Installing RVM ..."
+  curl -ssl https://get.rvm.io | bash
+
+fancy_echo "Installing Rails gem ..."
+  gem install rails
+
 if [[ ! -d "$HOME/.bin/" ]]; then
   mkdir "$HOME/.bin"
 fi
@@ -154,6 +163,10 @@ fancy_echo "Installing NVM, Node.js, and NPM, for running apps and installing Ja
 
 fancy_echo "Starting Postgres ..."
   brew_launchctl_restart postgresql
+
+fancy_echo "Starting Redis ..."
+    brew_launchctl_restart redis
+
 ### end mac-components/start-services
 
 fancy_echo "Installing rbenv, to change Ruby versions ..."
@@ -208,6 +221,9 @@ fancy_echo "Installing Suspenders, thoughtbot's Rails template ..."
 fancy_echo "Installing Parity, shell commands for development, staging, and
 production parity ..."
   gem install parity --no-document
+
+fancy_echo "Installing memcached ..."
+  gem install memcached
 ### end common-components/default-gems
 
 fancy_echo "Installing Heroku CLI client ..."
@@ -236,3 +252,39 @@ fancy_echo "Installing your personal additions from ~/.laptop.local ..."
   fi
 ### end common-components/personal-additions
 
+read -n1 -r -p 'Generate Keys like this: ssh-keygen -t rsa -C "your_email@example.com" \n [Press space to continue]' key
+
+if [ "$key" = ' ' ]; then
+    
+  if [[ ! -d "$HOME/Code/" ]]; then
+    fancy_echo "Checking out repos ..."
+      mkdir "$HOME/Code" && cd $_ && git clone git@github.com:hoteltonight/hotelstonight.git 
+  fi
+
+  fancy_echo "Create .ruby-gemset ..."
+    cd ~/Code/hotelstonight && rvm gemset create .ruby-gemset
+
+  fancy_echo "Create hoteltonight gem set ..."
+    cd ~/Code/hotelstonight && rvm gemset create hoteltonight
+
+  fancy_echo "Use hoteltonight gem set ..."
+     rvm gemset use hoteltonight
+
+  fancy_echo "Prep & Install specific mysql ..."
+    cd /usr/local && git checkout f4009ef /usr/local/Library/Formula/mysql.rb && brew install mysql
+
+  fancy_echo "Starting Mysql ..."
+    brew_launchctl_restart mysql
+
+  fancy_echo "Starting Memcached ..."
+    brew_launchctl_restart memcached
+
+  fancy_echo "Bundle fix install ..."
+    gem install ruby-debug-base19 && bundle install
+
+  fancy_echo "Rake db create ..."
+    cd ~/Code/hotelstonight && bundle exec rake db:create
+
+else
+    # noop
+fi
